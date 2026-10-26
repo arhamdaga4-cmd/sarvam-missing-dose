@@ -3,35 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Missing Dose — run a check-in call</title>
-<meta name="description" content="A working browser demo of the Missing Dose check-in agent: pick a patient, answer the call in their language, and watch the structured report and escalation decision being built.">
+<title>Missing Dose — live check-in agent</title>
+<meta name="description" content="A working medicine check-in agent: pick a patient, speak or type their answers, and Sarvam's models run the call, produce a structured report and decide escalation.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f2efe7;
-    --grid: rgba(28, 43, 58, 0.055);
-    --surface: #fbf9f4;
-    --surface-2: #f6f3eb;
-    --recessed: #ece7dc;
-    --border: rgba(28, 43, 58, 0.14);
-    --border-strong: rgba(28, 43, 58, 0.3);
-    --text: #17232f;
-    --text-dim: #5c6b78;
-    --text-faint: #8a97a1;
-    --teal: #0d6e68;
-    --teal-dim: rgba(13, 110, 104, 0.1);
-    --rust: #a8490f;
-    --rust-dim: rgba(168, 73, 15, 0.1);
-    --green: #2f6f3e;
-    --green-dim: rgba(47, 111, 62, 0.13);
-    --amber: #8a5a06;
-    --amber-dim: rgba(138, 90, 6, 0.13);
-    --red: #9b2c2c;
-    --red-dim: rgba(155, 44, 44, 0.13);
-    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
-    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    --bg: #f2efe7; --grid: rgba(28,43,58,.055);
+    --surface: #fbf9f4; --surface-2: #f6f3eb; --recessed: #ece7dc;
+    --border: rgba(28,43,58,.14); --border-strong: rgba(28,43,58,.3);
+    --text: #17232f; --text-dim: #5c6b78; --text-faint: #8a97a1;
+    --teal: #0d6e68; --teal-dim: rgba(13,110,104,.1);
+    --rust: #a8490f; --rust-dim: rgba(168,73,15,.1);
+    --green: #2f6f3e; --green-dim: rgba(47,111,62,.13);
+    --amber: #8a5a06; --amber-dim: rgba(138,90,6,.13);
+    --red: #9b2c2c; --red-dim: rgba(155,44,44,.13);
+    --font-body: "IBM Plex Sans","Segoe UI",sans-serif;
+    --font-mono: "IBM Plex Mono",ui-monospace,monospace;
     --shadow: 0 1px 2px rgba(28,43,58,.05), 0 10px 28px -20px rgba(28,43,58,.4);
   }
   @media (prefers-color-scheme: dark) {
@@ -52,8 +41,7 @@
   body {
     margin: 0; color: var(--text); font-family: var(--font-body); font-size: 15.5px; line-height: 1.6;
     background-color: var(--bg);
-    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px),
-      radial-gradient(900px 420px at 20% -10%, var(--teal-dim), transparent 70%);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px), radial-gradient(900px 420px at 20% -10%, var(--teal-dim), transparent 70%);
     background-size: 32px 32px, 32px 32px, 100% 100%;
     -webkit-font-smoothing: antialiased;
   }
@@ -69,78 +57,73 @@
   .topnav a { color: var(--text-dim); }
   .topnav a:hover { color: var(--teal); }
 
-  .shell { max-width: 1240px; margin: 0 auto; padding: 26px 22px 70px; }
-  .pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
+  .shell { max-width: 1240px; margin: 0 auto; padding: 24px 22px 70px; }
+  .pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
   .pagehead h1 { margin: 0 0 6px; font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -.02em; font-weight: 600; }
-  .pagehead p { margin: 0; color: var(--text-dim); font-weight: 300; font-size: .95rem; max-width: 62ch; }
-  .pill { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 9px; border-radius: 2px; border: 1px solid var(--border); color: var(--text-dim); background: var(--surface); white-space: nowrap; }
-  .pill--live { color: var(--teal); background: var(--teal-dim); border-color: transparent; }
+  .pagehead p { margin: 0; color: var(--text-dim); font-weight: 300; font-size: .95rem; max-width: 64ch; }
 
-  .layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-  @media (max-width: 940px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  /* key bar */
+  .keybar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); box-shadow: var(--shadow); margin-bottom: 18px; }
+  .keybar__label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+  .keybar input {
+    flex: 1 1 260px; min-width: 0; font-family: var(--font-mono); font-size: 12.5px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 2px; background: var(--surface-2); color: var(--text);
+  }
+  .keybar input:focus { outline: 2px solid var(--teal-dim); border-color: var(--teal); }
+  .pill { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 9px; border-radius: 2px; border: 1px solid var(--border); color: var(--text-dim); background: var(--surface); white-space: nowrap; }
+  .pill--live { color: var(--green); background: var(--green-dim); border-color: transparent; }
+  .pill--demo { color: var(--amber); background: var(--amber-dim); border-color: transparent; }
+
+  .layout { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); gap: 18px; align-items: start; }
+  @media (max-width: 940px) { .layout { grid-template-columns: minmax(0,1fr); } }
 
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 3px; box-shadow: var(--shadow); min-width: 0; }
   .panel__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); border-radius: 3px 3px 0 0; flex-wrap: wrap; }
   .panel__title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); }
   .panel__body { padding: 16px; }
 
-  /* patient strip */
   .patient { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--teal-dim); color: var(--teal); font-family: var(--font-mono); font-size: 13px; font-weight: 600; flex: 0 0 auto; }
-  .patient__meta { min-width: 0; }
   .patient__name { font-weight: 600; font-size: .98rem; }
   .patient__sub { font-size: .8rem; color: var(--text-dim); font-family: var(--font-mono); }
   .patient__meds { font-size: .78rem; color: var(--text-faint); margin-top: 2px; }
 
-  /* selector */
   .picker { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
-  .pick {
-    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; padding: 6px 11px; cursor: pointer;
-    border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); border-radius: 2px;
-    transition: all .15s ease;
-  }
+  .pick { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; padding: 6px 11px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); border-radius: 2px; transition: all .15s ease; }
   .pick:hover { border-color: var(--teal); color: var(--teal); }
   .pick[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: var(--bg); }
 
-  /* transcript */
-  .call { display: flex; flex-direction: column; height: 460px; }
-  .transcript { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
-  .turn { display: flex; gap: 10px; max-width: 92%; animation: rise .28s ease both; }
+  .call { display: flex; flex-direction: column; height: 440px; }
+  .transcript { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .turn { display: flex; gap: 10px; max-width: 94%; animation: rise .28s ease both; }
   .turn--agent { align-self: flex-start; }
   .turn--patient { align-self: flex-end; flex-direction: row-reverse; }
-  .turn__who { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); writing-mode: vertical-rl; transform: rotate(180deg); text-align: right; flex: 0 0 auto; }
-  .bubble { padding: 10px 13px; border-radius: 3px; font-size: .92rem; line-height: 1.5; overflow-wrap: break-word; min-width: 0; }
+  .turn__who { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); writing-mode: vertical-rl; transform: rotate(180deg); flex: 0 0 auto; }
+  .bubble { padding: 10px 13px; border-radius: 3px; font-size: .93rem; line-height: 1.55; overflow-wrap: break-word; min-width: 0; }
   .turn--agent .bubble { background: var(--recessed); border: 1px solid var(--border); border-left: 2px solid var(--teal); }
   .turn--patient .bubble { background: var(--teal); color: var(--bg); }
-  .bubble__gloss { display: block; margin-top: 5px; font-size: .74rem; opacity: .68; font-style: italic; }
-  .turn--patient .bubble__gloss { color: var(--bg); }
+  .bubble--thinking { color: var(--text-faint); font-style: italic; }
 
-  /* options */
-  .replies { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--surface-2); border-radius: 0 0 3px 3px; }
-  .replies__label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
-  .reply-list { display: grid; gap: 7px; }
-  .reply {
-    text-align: left; cursor: pointer; padding: 9px 12px; border: 1px solid var(--border); border-radius: 2px;
-    background: var(--surface); color: var(--text); font-family: var(--font-body); font-size: .9rem;
-    transition: all .15s ease; width: 100%; min-width: 0;
-  }
-  .reply:hover { border-color: var(--teal); background: var(--teal-dim); transform: translateX(2px); }
-  .reply span { display: block; font-size: .74rem; color: var(--text-faint); margin-top: 2px; font-style: italic; }
+  .composer { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--surface-2); border-radius: 0 0 3px 3px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 9px; }
+  .chip { font-size: .78rem; padding: 4px 9px; border: 1px dashed var(--border-strong); background: transparent; color: var(--text-dim); border-radius: 2px; cursor: pointer; font-family: var(--font-body); }
+  .chip:hover { border-color: var(--teal); color: var(--teal); }
+  .inputrow { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+  .inputrow input[type="text"] { flex: 1 1 200px; min-width: 0; padding: 10px 12px; font-family: var(--font-body); font-size: .92rem; border: 1px solid var(--border); border-radius: 2px; background: var(--surface); color: var(--text); }
+  .inputrow input[type="text"]:focus { outline: 2px solid var(--teal-dim); border-color: var(--teal); }
 
-  .controls { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--border); }
-  .btn {
-    font-family: var(--font-mono); font-size: 12px; letter-spacing: .03em; padding: 8px 14px; cursor: pointer;
-    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: 2px;
-    transition: all .15s ease;
-  }
+  .btn { font-family: var(--font-mono); font-size: 12px; letter-spacing: .03em; padding: 9px 14px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: 2px; transition: all .15s ease; white-space: nowrap; }
   .btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
   .btn--primary { background: var(--teal); border-color: var(--teal); color: var(--bg); font-weight: 500; }
   .btn--primary:hover:not(:disabled) { color: var(--bg); opacity: .92; }
   .btn--ghost { border-color: transparent; color: var(--text-dim); }
+  .btn--mic[data-rec="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn--mic[data-rec="true"]::before { content: "■ "; }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--border); }
   .spacer { flex: 1; }
 
-  /* report */
   .report__row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--border); font-size: .88rem; }
   .report__row:last-child { border-bottom: none; }
   .report__key { color: var(--text-dim); font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; flex: 0 0 auto; }
@@ -157,25 +140,29 @@
   .badge--idle { color: var(--text-faint); background: var(--recessed); }
 
   .esc { padding: 14px 16px; }
-  .esc__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .esc__reasons { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .esc__reasons { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; }
   .esc__reasons li { font-size: .87rem; color: var(--text-dim); padding-left: 14px; position: relative; overflow-wrap: break-word; }
   .esc__reasons li::before { content: "→"; position: absolute; left: 0; color: var(--rust); font-family: var(--font-mono); font-size: 11px; }
-  .esc__action { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .85rem; color: var(--text-dim); }
+  .esc__action { padding-top: 10px; border-top: 1px solid var(--border); font-size: .85rem; color: var(--text-dim); }
 
-  /* log */
-  .log { max-height: 190px; overflow-y: auto; padding: 12px 16px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.85; color: var(--text-dim); }
+  .log { max-height: 175px; overflow-y: auto; padding: 12px 16px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.8; color: var(--text-dim); }
   .log div { overflow-wrap: break-word; }
   .log .t { color: var(--text-faint); }
   .log .k { color: var(--rust); }
   .log .ok { color: var(--teal); }
+  .log .bad { color: var(--red); }
 
-  .note { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--border); border-left: 3px solid var(--amber); background: var(--amber-dim); border-radius: 3px; font-size: .87rem; color: var(--text); }
+  .note { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--border); border-left: 3px solid var(--amber); background: var(--amber-dim); border-radius: 3px; font-size: .87rem; }
+  .note--teal { border-left-color: var(--teal); background: var(--teal-dim); }
   .note strong { font-weight: 600; }
-  .foot { margin-top: 26px; font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); display: flex; gap: 14px; flex-wrap: wrap; }
+  .foot { margin-top: 24px; font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); display: flex; gap: 14px; flex-wrap: wrap; }
+
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); max-width: min(92vw, 620px); z-index: 80; padding: 12px 16px; border-radius: 3px; border: 1px solid var(--red); background: var(--surface); color: var(--text); box-shadow: 0 12px 40px -12px rgba(0,0,0,.5); font-size: .88rem; display: none; }
+  .toast[data-show="true"] { display: block; animation: rise .25s ease both; }
+  .toast strong { color: var(--red); }
 
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .turn { animation: none; } .reply:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .turn, .toast { animation: none; } }
 </style>
 </head>
 <body>
@@ -194,23 +181,27 @@
   <div class="pagehead">
     <div>
       <h1>Run a check-in call</h1>
-      <p>Pick a patient, answer the phone the way they would, and watch the structured report and escalation decision build up beside the conversation.</p>
+      <p>Pick a patient and answer the way they would — by voice or by typing. Sarvam's models run the dialogue, produce the structured report, and the rule engine decides whether a coordinator gets paged.</p>
     </div>
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-      <span class="pill pill--live">Browser demo</span>
-      <span class="pill">no API key</span>
-    </div>
+    <span class="pill" id="modePill">demo</span>
+  </div>
+
+  <div class="keybar">
+    <span class="keybar__label">Sarvam key</span>
+    <input type="password" id="keyInput" placeholder="sk_... (dashboard.sarvam.ai) — stays in this browser" autocomplete="off" spellcheck="false">
+    <button class="btn" id="keySave">Connect</button>
+    <button class="btn btn--ghost" id="keyClear" title="Forget the key on this device">Forget</button>
+    <span class="pill" id="keyState">not connected</span>
   </div>
 
   <div class="layout">
-    <!-- ---------------- call ---------------- -->
     <section class="panel" aria-label="Call">
       <div class="patient">
         <div class="avatar" id="avatar">RK</div>
-        <div class="patient__meta">
+        <div>
           <div class="patient__name" id="pName">Ramesh Kumar</div>
           <div class="patient__sub" id="pSub">P001 · hi-IN · Hindi · 67y</div>
-          <div class="patient__meds" id="pMeds">Metformin 500mg · Amlodipine 5mg</div>
+          <div class="patient__meds" id="pMeds"></div>
         </div>
       </div>
 
@@ -218,16 +209,20 @@
         <button class="pick" data-pid="P001" aria-pressed="true">P001 · Hindi</button>
         <button class="pick" data-pid="P002" aria-pressed="false">P002 · Tamil</button>
         <button class="pick" data-pid="P003" aria-pressed="false">P003 · Gujarati</button>
-        <button class="pick" id="speakToggle" aria-pressed="false" title="Read the agent's lines aloud with your browser's voice">Speak aloud</button>
+        <button class="pick" id="speakToggle" aria-pressed="true" title="Play the agent's replies aloud (Bulbul v3)">Voice on</button>
       </div>
 
       <div class="call">
         <div class="transcript" id="transcript" aria-live="polite">
-          <div class="empty" id="startHint">Press <strong>Start call</strong> to connect.</div>
+          <div class="empty" id="startHint">Press <strong>Start call</strong> to begin.</div>
         </div>
-        <div class="replies" id="replies" hidden>
-          <div class="replies__label">Your answer, as the patient</div>
-          <div class="reply-list" id="replyList"></div>
+        <div class="composer" id="composer" hidden>
+          <div class="chips" id="chips"></div>
+          <div class="inputrow">
+            <input type="text" id="answerInput" placeholder="Type the patient's answer, or hold the mic…">
+            <button class="btn btn--mic" id="micBtn" title="Record the patient's voice (Saaras v4)">Mic</button>
+            <button class="btn btn--primary" id="sendBtn">Send</button>
+          </div>
         </div>
       </div>
 
@@ -239,26 +234,15 @@
       </div>
     </section>
 
-    <!-- ---------------- side ---------------- -->
     <div style="display:grid; gap:18px; min-width:0">
       <section class="panel" aria-label="Extracted report">
-        <div class="panel__head">
-          <span class="panel__title">Structured report</span>
-          <span class="pill" id="reportState">waiting</span>
-        </div>
-        <div class="panel__body" id="reportBody">
-          <div class="empty">Fields fill in as the call progresses.</div>
-        </div>
+        <div class="panel__head"><span class="panel__title">Structured report</span><span class="pill" id="reportState">waiting</span></div>
+        <div class="panel__body" id="reportBody"><div class="empty">Fields fill in when the call ends.</div></div>
       </section>
 
       <section class="panel" aria-label="Escalation">
-        <div class="panel__head">
-          <span class="panel__title">Escalation decision</span>
-          <span class="badge badge--idle" id="escBadge">not evaluated</span>
-        </div>
-        <div class="esc" id="escBody">
-          <div class="empty">Decided by rules, after the call ends.</div>
-        </div>
+        <div class="panel__head"><span class="panel__title">Escalation decision</span><span class="badge badge--idle" id="escBadge">not evaluated</span></div>
+        <div class="esc" id="escBody"><div class="empty">Decided by rules, after the call.</div></div>
       </section>
 
       <section class="panel" aria-label="Pipeline log">
@@ -268,281 +252,305 @@
     </div>
   </div>
 
-  <div class="note">
-    <strong>What this page is:</strong> a working model of the agent's flow running entirely in your browser — scripted agent lines, your answers, and a real rule engine deciding escalation. It does not call any API or phone number. The shipped agent uses Sarvam's Saaras v4 for speech, Bulbul v3 for voice and Sarvam-105B for the dialogue; the <a href="./about.html">How it works</a> page and the <a href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose">repository</a> show that code.
+  <div class="note note--teal">
+    <strong>Live mode.</strong> Paste your Sarvam subscription key above and the page talks to Sarvam directly from your browser: <code>sarvam-105b-conversations</code> for the dialogue, <code>bulbul:v3</code> for the voice, <code>saaras:v4</code> for your speech. The key is stored in this browser's local storage and never leaves it — but anything stored in a browser can be read on that device, so use a throwaway key here and keep real patient calls on the server deployment in the <a href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose">repository</a>. Without a key the page falls back to a scripted demo so you can still see the flow.
   </div>
 
   <div class="foot">
     <span>Demo patients are fictional</span>
-    <span>Rules mirror companion/escalation.py</span>
-    <span>No data leaves this page</span>
+    <span>Escalation rules mirror companion/escalation.py</span>
+    <span id="footEngine">engine: demo</span>
   </div>
 </main>
+
+<div class="toast" id="toast" role="alert"></div>
 
 <script>
 (function () {
   "use strict";
 
+  var API = "https://api.sarvam.ai";
+  var CHAT_MODEL = "sarvam-105b-conversations";
+  var TTS_MODEL = "bulbul:v3";
+  var STT_MODEL = "saaras:v4";
+  var KEY_STORE = "sarvam_key";
+
   /* ------------------------------------------------------------------ data */
+  var TOPICS = ["medication_adherence", "side_effects", "symptoms", "appointment"];
+  var CLOSING = "closing";
+
+  var TOPIC_INSTRUCTION = {
+    medication_adherence: "Ask whether the patient has taken today's medicines (name them). If they say they missed any, ask how many doses and why, briefly.",
+    side_effects: "Ask whether the medicine caused any discomfort or side effects. Accept a short answer and move on.",
+    symptoms: "Ask how they are feeling today - pain, dizziness, breathlessness, swelling. If they mention something serious, ask one clarifying question about how long it has been happening.",
+    appointment: "Remind them of the appointment date and ask whether they can come. If they say no, ask once whether they need help with transport.",
+    closing: "Thank the patient by name, remind them to take tomorrow's medicines, and say goodbye. This is the last thing you say on the call."
+  };
+
   var PATIENTS = {
     P001: {
-      id: "P001", name: "Ramesh Kumar", initials: "RK", lang: "hi-IN", langName: "Hindi",
-      age: 67, condition: "Type 2 diabetes, hypertension",
-      meds: ["Metformin 500mg", "Amlodipine 5mg"], appt: "12 Nov 2026, 11:00 AM",
+      id: "P001", name: "Ramesh Kumar", initials: "RK", lang: "hi-IN", langName: "Hindi", age: 67,
+      condition: "Type 2 diabetes, hypertension",
+      meds: ["Metformin 500mg (morning, night)", "Amlodipine 5mg (morning)"],
+      appt: "12 November 2026, 11:00 AM", voice: "anushka",
       coordinator: "Nurse Asha · +91 90000 00101",
-      lines: {
-        med: "नमस्ते रमेश जी, मैं स्वास्थ्य केंद्र से बोल रही हूँ। आज आपने अपनी दवाइयाँ ली हैं?",
-        side: "समझ गई। दवा लेने के बाद कोई परेशानी या दिक्कत महसूस हुई?",
-        symp: "ठीक है। आज तबीयत कैसी है — कोई दर्द, चक्कर या सांस की तकलीफ़?",
-        appt: "धन्यवाद। आपकी अगली अपॉइंटमेंट 12 नवंबर को है, क्या आप आ पाएंगे?",
-        close: "बहुत धन्यवाद रमेश जी। कल की दवा समय पर लीजिएगा, अपना ख्याल रखिए।"
+      demoLines: {
+        medication_adherence: "नमस्ते रमेश जी, मैं स्वास्थ्य केंद्र से बोल रही हूँ। आज आपने अपनी दवाइयाँ ली हैं?",
+        side_effects: "समझ गई। दवा लेने के बाद कोई परेशानी या दिक्कत महसूस हुई?",
+        symptoms: "ठीक है। आज तबीयत कैसी है — कोई दर्द, चक्कर या सांस की तकलीफ़?",
+        appointment: "धन्यवाद। आपकी अगली अपॉइंटमेंट 12 नवंबर को है, क्या आप आ पाएंगे?",
+        closing: "बहुत धन्यवाद रमेश जी। कल की दवा समय पर लीजिएगा, अपना ख्याल रखिए।"
       },
-      options: {
-        med: [
-          { t: "हाँ, आज सुबह दोनों ली।", g: "Yes, took both this morning.", took: "yes", missed: 0 },
-          { t: "सिर्फ़ सुबह की ली, रात की भूल गई।", g: "Only the morning one, forgot the night dose.", took: "partial", missed: 1 },
-          { t: "नहीं, दो दिन से नहीं ली।", g: "No, I haven't taken them for two days.", took: "no", missed: 2 }
-        ],
-        side: [
-          { t: "कोई दिक्कत नहीं हुई।", g: "No discomfort.", side: "none" },
-          { t: "थोड़ा सिरदर्द रहता है।", g: "A mild headache.", side: "mild" },
-          { t: "चक्कर आते हैं, कमज़ोरी लगती है।", g: "Dizzy spells and weakness.", side: "moderate" }
-        ],
-        symp: [
-          { t: "ठीक हूँ, कोई तकलीफ़ नहीं।", g: "I'm fine, nothing wrong.", symp: "none" },
-          { t: "सीने में हल्का दर्द है।", g: "Mild pain in the chest.", symp: "chest" },
-          { t: "सांस लेने में तकलीफ़ होती है।", g: "I get breathless.", symp: "breath" }
-        ],
-        appt: [
-          { t: "हाँ, ज़रूर आऊंगा।", g: "Yes, I'll come.", appt: "yes" },
-          { t: "नहीं आ पाऊंगा, चलने में दिक्कत है।", g: "I can't come, walking is hard.", appt: "no" },
-          { t: "आने की कोशिश करूंगा।", g: "I'll try to come.", appt: "unsure" }
-        ]
+      chips: {
+        medication_adherence: ["हाँ, आज सुबह दोनों ली।", "सिर्फ़ सुबह की ली, रात की भूल गई।", "नहीं, दो दिन से नहीं ली।"],
+        side_effects: ["कोई दिक्कत नहीं हुई।", "थोड़ा सिरदर्द रहता है।", "चक्कर आते हैं, कमज़ोरी लगती है।"],
+        symptoms: ["ठीक हूँ, कोई तकलीफ़ नहीं।", "सीने में हल्का दर्द है।", "सांस लेने में तकलीफ़ होती है।"],
+        appointment: ["हाँ, ज़रूर आऊंगा।", "नहीं आ पाऊंगा, चलने में दिक्कत है।"]
       }
     },
     P002: {
-      id: "P002", name: "Lakshmi Iyer", initials: "LI", lang: "ta-IN", langName: "Tamil",
-      age: 72, condition: "Post-angioplasty, dual antiplatelet therapy",
-      meds: ["Aspirin 75mg", "Clopidogrel 75mg", "Atorvastatin 20mg"], appt: "14 Nov 2026, 4:30 PM",
+      id: "P002", name: "Lakshmi Iyer", initials: "LI", lang: "ta-IN", langName: "Tamil", age: 72,
+      condition: "Post-angioplasty, dual antiplatelet therapy",
+      meds: ["Aspirin 75mg (morning)", "Clopidogrel 75mg (morning)", "Atorvastatin 20mg (night)"],
+      appt: "14 November 2026, 4:30 PM", voice: "anushka",
       coordinator: "Nurse Priya · +91 90000 00102",
-      lines: {
-        med: "வணக்கம் லக்ஷ்மி அவர்களே, நான் சுகாதார மையத்திலிருந்து பேசுகிறேன். இன்று மருந்து எடுத்தீர்களா?",
-        side: "சரி. மருந்து எடுத்த பிறகு ஏதேனும் அசௌகரியம் உள்ளதா?",
-        symp: "சரி. இன்று உடல்நிலை எப்படி இருக்கிறது — வலி, தலைச்சுற்றல் அல்லது மூச்சுத் திணறல்?",
-        appt: "நன்றி. அடுத்த சந்திப்பு 14 நவம்பர் அன்று. வர முடியுமா?",
-        close: "மிக்க நன்றி லக்ஷ்மி. நாளை மருந்தை நேரத்தில் எடுத்துக்கொள்ளுங்கள்."
+      demoLines: {
+        medication_adherence: "வணக்கம் லக்ஷ்மி அவர்களே, நான் சுகாதார மையத்திலிருந்து பேசுகிறேன். இன்று மருந்து எடுத்தீர்களா?",
+        side_effects: "சரி. மருந்து எடுத்த பிறகு ஏதேனும் அசௌகரியம் உள்ளதா?",
+        symptoms: "சரி. இன்று உடல்நிலை எப்படி இருக்கிறது — வலி, தலைச்சுற்றல் அல்லது மூச்சுத் திணறல்?",
+        appointment: "நன்றி. அடுத்த சந்திப்பு 14 நவம்பர் அன்று. வர முடியுமா?",
+        closing: "மிக்க நன்றி லக்ஷ்மி. நாளை மருந்தை நேரத்தில் எடுத்துக்கொள்ளுங்கள்."
       },
-      options: {
-        med: [
-          { t: "ஆம், இன்று காலையில் இரண்டையும் எடுத்தேன்.", g: "Yes, took both this morning.", took: "yes", missed: 0 },
-          { t: "காலையில் மட்டும் எடுத்தேன், இரவு மறந்துவிட்டது.", g: "Only the morning one, forgot the night dose.", took: "partial", missed: 1 },
-          { t: "இல்லை, இரண்டு நாட்களாக எடுக்கவில்லை.", g: "No, not for two days.", took: "no", missed: 2 }
-        ],
-        side: [
-          { t: "எந்த அசௌகரியமும் இல்லை.", g: "No discomfort at all.", side: "none" },
-          { t: "சிறிய தலைவலி உள்ளது.", g: "A small headache.", side: "mild" },
-          { t: "தலைச்சுற்றல், சோர்வாக இருக்கிறது.", g: "Dizziness and tiredness.", side: "moderate" }
-        ],
-        symp: [
-          { t: "நல்லா இருக்கேன், பிரச்சனை இல்லை.", g: "I'm well, no problem.", symp: "none" },
-          { t: "நெஞ்சில் லேசான வலி உள்ளது.", g: "Mild pain in the chest.", symp: "chest" },
-          { t: "மூச்சு வாங்குகிறது.", g: "I'm short of breath.", symp: "breath" }
-        ],
-        appt: [
-          { t: "ஆம், நிச்சயம் வருவேன்.", g: "Yes, I will definitely come.", appt: "yes" },
-          { t: "வர முடியாது, நடக்க கஷ்டமாக உள்ளது.", g: "I can't come, walking is difficult.", appt: "no" },
-          { t: "வர முயற்சிக்கிறேன்.", g: "I'll try to come.", appt: "unsure" }
-        ]
+      chips: {
+        medication_adherence: ["ஆம், இன்று காலையில் இரண்டையும் எடுத்தேன்.", "காலையில் மட்டும் எடுத்தேன், இரவு மறந்துவிட்டது.", "இல்லை, இரண்டு நாட்களாக எடுக்கவில்லை."],
+        side_effects: ["எந்த அசௌகரியமும் இல்லை.", "சிறிய தலைவலி உள்ளது.", "தலைச்சுற்றல், சோர்வாக இருக்கிறது."],
+        symptoms: ["நல்லா இருக்கேன், பிரச்சனை இல்லை.", "நெஞ்சில் லேசான வலி உள்ளது.", "மூச்சு வாங்குகிறது."],
+        appointment: ["ஆம், நிச்சயம் வருவேன்.", "வர முடியாது, நடக்க கஷ்டமாக உள்ளது."]
       }
     },
     P003: {
-      id: "P003", name: "Suresh Patel", initials: "SP", lang: "gu-IN", langName: "Gujarati",
-      age: 59, condition: "Ischaemic heart disease",
-      meds: ["Aspirin 75mg", "Metoprolol 25mg"], appt: "18 Nov 2026, 9:00 AM",
+      id: "P003", name: "Suresh Patel", initials: "SP", lang: "gu-IN", langName: "Gujarati", age: 59,
+      condition: "Ischaemic heart disease",
+      meds: ["Aspirin 75mg (morning)", "Metoprolol 25mg (morning, night)"],
+      appt: "18 November 2026, 9:00 AM", voice: "anushka",
       coordinator: "Nurse Meera · +91 90000 00103",
-      lines: {
-        med: "નમસ્તે સુરેશભાઈ, હું આરોગ્ય કેન્દ્રથી બોલું છું. આજે તમે દવા લીધી છે?",
-        side: "સમજી ગઈ. દવા લીધા પછી કોઈ તકલીફ થઈ છે?",
-        symp: "ઠીક છે. આજે તબિયત કેવી છે — દુખાવો, ચક્કર કે શ્વાસ લેવામાં તકલીફ?",
-        appt: "આભાર. તમારી આગળની મુલાકાત 18 નવેમ્બરના રોજ છે, આવી શકશો?",
-        close: "ખૂબ ખૂબ આભાર સુરેશભાઈ. કાલે દવા સમયસર લેજો."
+      demoLines: {
+        medication_adherence: "નમસ્તે સુરેશભાઈ, હું આરોગ્ય કેન્દ્રથી બોલું છું. આજે તમે દવા લીધી છે?",
+        side_effects: "સમજી ગઈ. દવા લીધા પછી કોઈ તકલીફ થઈ છે?",
+        symptoms: "ઠીક છે. આજે તબિયત કેવી છે — દુખાવો, ચક્કર કે શ્વાસ લેવામાં તકલીફ?",
+        appointment: "આભાર. તમારી આગળની મુલાકાત 18 નવેમ્બરના રોજ છે, આવી શકશો?",
+        closing: "ખૂબ ખૂબ આભાર સુરેશભાઈ. કાલે દવા સમયસર લેજો."
       },
-      options: {
-        med: [
-          { t: "હા, આજે સવારે બંને લીધી.", g: "Yes, took both this morning.", took: "yes", missed: 0 },
-          { t: "ફક્ત સવારની લીધી, રાતની ભૂલી ગયો.", g: "Only the morning one, forgot the night dose.", took: "partial", missed: 1 },
-          { t: "ના, બે દિવસથી લીધી નથી.", g: "No, not for two days.", took: "no", missed: 2 }
-        ],
-        side: [
-          { t: "કોઈ તકલીફ નથી.", g: "No discomfort.", side: "none" },
-          { t: "થોડું માથું દુખે છે.", g: "A slight headache.", side: "mild" },
-          { t: "ચક્કર આવે છે, નબળાઈ લાગે છે.", g: "Dizziness and weakness.", side: "moderate" }
-        ],
-        symp: [
-          { t: "ઠીક છું, કોઈ તકલીફ નથી.", g: "I'm fine, nothing wrong.", symp: "none" },
-          { t: "છાતીમાં હળવો દુખાવો છે.", g: "Mild pain in the chest.", symp: "chest" },
-          { t: "શ્વાસ લેવામાં તકલીફ થાય છે.", g: "I have trouble breathing.", symp: "breath" }
-        ],
-        appt: [
-          { t: "હા, ચોક્કસ આવીશ.", g: "Yes, I will come for sure.", appt: "yes" },
-          { t: "આવી શકીશ નહીં, ચાલવામાં તકલીફ છે.", g: "I can't come, walking is hard.", appt: "no" },
-          { t: "આવવાની કોશિશ કરીશ.", g: "I'll try to come.", appt: "unsure" }
-        ]
+      chips: {
+        medication_adherence: ["હા, આજે સવારે બંને લીધી.", "ફક્ત સવારની લીધી, રાતની ભૂલી ગયો.", "ના, બે દિવસથી લીધી નથી."],
+        side_effects: ["કોઈ તકલીફ નથી.", "થોડું માથું દુખે છે.", "ચક્કર આવે છે, નબળાઈ લાગે છે."],
+        symptoms: ["ઠીક છું, કોઈ તકલીફ નથી.", "છાતીમાં હળવો દુખાવો છે.", "શ્વાસ લેવામાં તકલીફ થાય છે."],
+        appointment: ["હા, ચોક્કસ આવીશ.", "આવી શકીશ નહીં, ચાલવામાં તકલીફ છે."]
       }
     }
   };
 
-  var TOPICS = ["med", "side", "symp", "appt"];
-  var TOPIC_LABEL = { med: "medication", side: "side effects", symp: "symptoms", appt: "appointment" };
-  var AGENT_LABEL = { med: "medication", side: "side effects", symp: "symptoms", appt: "appointment", close: "closing" };
-
   /* --------------------------------------------------------------- elements */
+  var $ = function (id) { return document.getElementById(id); };
   var el = {
-    avatar: document.getElementById("avatar"),
-    pName: document.getElementById("pName"),
-    pSub: document.getElementById("pSub"),
-    pMeds: document.getElementById("pMeds"),
-    transcript: document.getElementById("transcript"),
-    startHint: document.getElementById("startHint"),
-    replies: document.getElementById("replies"),
-    replyList: document.getElementById("replyList"),
-    startBtn: document.getElementById("startBtn"),
-    againBtn: document.getElementById("againBtn"),
-    jsonBtn: document.getElementById("jsonBtn"),
-    speakToggle: document.getElementById("speakToggle"),
-    reportBody: document.getElementById("reportBody"),
-    reportState: document.getElementById("reportState"),
-    escBadge: document.getElementById("escBadge"),
-    escBody: document.getElementById("escBody"),
-    log: document.getElementById("log")
+    avatar: $("avatar"), pName: $("pName"), pSub: $("pSub"), pMeds: $("pMeds"),
+    transcript: $("transcript"), startHint: $("startHint"), composer: $("composer"),
+    chips: $("chips"), answerInput: $("answerInput"), micBtn: $("micBtn"), sendBtn: $("sendBtn"),
+    startBtn: $("startBtn"), againBtn: $("againBtn"), jsonBtn: $("jsonBtn"),
+    speakToggle: $("speakToggle"), reportBody: $("reportBody"), reportState: $("reportState"),
+    escBadge: $("escBadge"), escBody: $("escBody"), log: $("log"),
+    modePill: $("modePill"), keyInput: $("keyInput"), keySave: $("keySave"),
+    keyClear: $("keyClear"), keyState: $("keyState"), footEngine: $("footEngine"),
+    toast: $("toast")
   };
 
   var state = {
-    pid: "P001", patient: null, step: 0, answers: {}, finished: false,
-    speak: false, clock: 0, report: null, escalation: null
+    pid: "P001", patient: null, step: 0, history: [], finished: false,
+    speak: true, busy: false, report: null, escalation: null, engine: "demo",
+    recorder: null, chunks: [], recording: false
   };
+
+  var KEY = "";
+  try { KEY = window.localStorage.getItem(KEY_STORE) || ""; } catch (e) { KEY = ""; }
 
   /* ------------------------------------------------------------------ utils */
   function esc(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  function stamp() {
-    state.clock += 4 + Math.floor(Math.random() * 5);
-    var s = state.clock;
-    return "00:" + (s < 10 ? "0" : "") + s;
+  function toast(msg) {
+    el.toast.innerHTML = "<strong>Problem.</strong> " + esc(msg);
+    el.toast.dataset.show = "true";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.toast.dataset.show = "false"; }, 9000);
   }
   function logLine(text, cls) {
     var d = document.createElement("div");
-    d.innerHTML = '<span class="t">[' + stamp() + "]</span> " +
-      (cls ? '<span class="' + cls + '">' + esc(text) + "</span>" : esc(text));
+    var t = new Date().toLocaleTimeString("en-GB", { hour12: false });
+    d.innerHTML = '<span class="t">[' + t + "]</span> " + (cls ? '<span class="' + cls + '">' + esc(text) + "</span>" : esc(text));
     el.log.appendChild(d);
     el.log.scrollTop = el.log.scrollHeight;
   }
+  function ms(start) { return Math.round(performance.now() - start) + " ms"; }
+  function isLive() { return !!KEY; }
 
-  /* ------------------------------------------------------------------ voice */
-  function speak(text) {
-    if (!state.speak || !("speechSynthesis" in window)) return;
+  function setMode() {
+    var live = isLive();
+    state.engine = live ? "live" : "demo";
+    el.modePill.textContent = live ? "live · Sarvam" : "demo · scripted";
+    el.modePill.className = "pill " + (live ? "pill--live" : "pill--demo");
+    el.keyState.textContent = live ? "connected" : "not connected";
+    el.keyState.className = "pill " + (live ? "pill--live" : "");
+    el.footEngine.textContent = "engine: " + (live ? "live (sarvam-105b · bulbul · saaras)" : "demo (scripted)");
+    el.keyInput.value = live ? "••••••••••••" : "";
+  }
+
+  /* --------------------------------------------------------------- API layer */
+  function authHeaders(extra) {
+    var h = { "api-subscription-key": KEY };
+    if (extra) { for (var k in extra) h[k] = extra[k]; }
+    return h;
+  }
+
+  async function apiError(resp) {
+    var detail = "";
     try {
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = state.patient.lang;
-      u.rate = 0.94;
-      window.speechSynthesis.speak(u);
-    } catch (e) { /* voice is a nicety, never a blocker */ }
+      var j = await resp.json();
+      detail = (j && j.error && (j.error.code || j.error.message)) || JSON.stringify(j).slice(0, 160);
+    } catch (e) {
+      detail = (await resp.text()).slice(0, 160);
+    }
+    if (resp.status === 403) return "Sarvam rejected the key (403 " + detail + "). Generate a fresh sk_... key at dashboard.sarvam.ai — the value is only shown once.";
+    if (resp.status === 429) return "Rate or credit limit reached (429). Check usage on the Sarvam dashboard.";
+    return "Sarvam returned " + resp.status + " — " + detail;
+  }
+
+  async function chat(messages, opts) {
+    opts = opts || {};
+    var body = {
+      model: CHAT_MODEL, messages: messages,
+      temperature: opts.temperature === undefined ? 0.4 : opts.temperature,
+      max_tokens: opts.maxTokens || 320
+    };
+    var resp = await fetch(API + "/v1/chat/completions", {
+      method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error(await apiError(resp));
+    var data = await resp.json();
+    var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (Array.isArray(content)) content = content.map(function (p) { return p.text || ""; }).join("");
+    return (content || "").trim();
+  }
+
+  async function synthesize(text, lang, speaker) {
+    var resp = await fetch(API + "/text-to-speech", {
+      method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ text: text, language_code: lang, model: TTS_MODEL, speaker: speaker || "anushka" })
+    });
+    if (!resp.ok) throw new Error(await apiError(resp));
+    var data = await resp.json();
+    var audios = data.audios || [];
+    if (!audios.length) throw new Error("TTS returned no audio.");
+    return "data:audio/wav;base64," + audios.join("");
+  }
+
+  async function transcribe(blob, lang) {
+    var fd = new FormData();
+    fd.append("file", blob, "utterance.webm");
+    fd.append("model", STT_MODEL);
+    fd.append("mode", "transcribe");
+    fd.append("language_code", lang);
+    var resp = await fetch(API + "/speech-to-text", { method: "POST", headers: authHeaders(), body: fd });
+    if (!resp.ok) throw new Error(await apiError(resp));
+    var data = await resp.json();
+    return (data.transcript || "").trim();
+  }
+
+  /* ------------------------------------------------------------------ speech */
+  var currentAudio = null;
+  async function speakAloud(text) {
+    if (!state.speak || !isLive() || !text) return;
+    try {
+      var t0 = performance.now();
+      var url = await synthesize(text, state.patient.lang, state.patient.voice);
+      logLine("TTS · bulbul:v3 · " + ms(t0), "ok");
+      if (currentAudio) { try { currentAudio.pause(); } catch (e) {} }
+      currentAudio = new Audio(url);
+      currentAudio.play().catch(function () { /* autoplay blocked; harmless */ });
+    } catch (err) {
+      logLine("TTS failed · " + err.message, "bad");
+    }
   }
 
   /* ------------------------------------------------------------- transcript */
-  function addTurn(role, text, gloss, topic) {
+  function addTurn(role, text) {
     if (el.startHint && el.startHint.parentNode) el.startHint.remove();
     var wrap = document.createElement("div");
     wrap.className = "turn turn--" + role;
-    wrap.innerHTML =
-      '<div class="turn__who">' + (role === "agent" ? "agent" : "patient") + "</div>" +
-      '<div class="bubble">' + esc(text) +
-      (gloss ? '<span class="bubble__gloss">' + esc(gloss) + "</span>" : "") +
-      "</div>";
+    wrap.innerHTML = '<div class="turn__who">' + (role === "agent" ? "agent" : "patient") + "</div>" +
+      '<div class="bubble">' + esc(text) + "</div>";
     el.transcript.appendChild(wrap);
     el.transcript.scrollTop = el.transcript.scrollHeight;
-    if (role === "agent") {
-      speak(text);
-      logLine("TTS · " + (topic ? AGENT_LABEL[topic] : "reply") + " spoken in " + state.patient.langName, "ok");
-    }
+    return wrap;
+  }
+  function thinking(on) {
+    var existing = document.getElementById("thinkingRow");
+    if (!on) { if (existing) existing.remove(); return; }
+    if (existing) return;
+    var wrap = document.createElement("div");
+    wrap.className = "turn turn--agent"; wrap.id = "thinkingRow";
+    wrap.innerHTML = '<div class="turn__who">agent</div><div class="bubble bubble--thinking">listening…</div>';
+    el.transcript.appendChild(wrap);
+    el.transcript.scrollTop = el.transcript.scrollHeight;
   }
 
-  function renderOptions(topic) {
-    var opts = state.patient.options[topic];
-    el.replyList.innerHTML = "";
-    opts.forEach(function (o) {
+  function renderChips(topic) {
+    el.chips.innerHTML = "";
+    var list = (state.patient.chips && state.patient.chips[topic]) || [];
+    list.forEach(function (t) {
       var b = document.createElement("button");
-      b.className = "reply";
-      b.type = "button";
-      b.innerHTML = esc(o.t) + "<span>" + esc(o.g) + "</span>";
-      b.addEventListener("click", function () { answer(topic, o); });
-      el.replyList.appendChild(b);
+      b.className = "chip"; b.type = "button"; b.textContent = t;
+      b.addEventListener("click", function () { send(t); });
+      el.chips.appendChild(b);
     });
-    el.replies.hidden = false;
   }
 
-  function hideOptions() { el.replies.hidden = true; el.replyList.innerHTML = ""; }
-
-  /* ------------------------------------------------------------------ report */
-  function buildReport() {
-    var a = state.answers;
-    var med = a.med || {}, side = a.side || {}, symp = a.symp || {}, appt = a.appt || {};
-
-    var medicationTaken = null;
-    if (med.took === "yes") medicationTaken = true;
-    else if (med.took === "partial") medicationTaken = true;
-    else if (med.took === "no") medicationTaken = false;
-
-    var sideEffects = [];
-    if (side.side === "mild") sideEffects.push("headache");
-    if (side.side === "moderate") sideEffects.push("dizziness", "weakness");
-
-    var symptoms = [], urgent = [];
-    if (symp.symp === "chest") {
-      symptoms.push({ name: "chest pain", severity: "moderate" });
-      urgent.push(symp.t || "chest pain");
-    }
-    if (symp.symp === "breath") {
-      symptoms.push({ name: "breathlessness", severity: "severe" });
-      urgent.push(symp.t || "breathlessness");
-    }
-
-    var appointmentOk = null;
-    if (appt.appt === "yes") appointmentOk = true;
-    else if (appt.appt === "no") appointmentOk = false;
-
-    var missed = typeof med.missed === "number" ? med.missed : 0;
-
-    var bits = [];
-    if (medicationTaken === true && missed === 0) bits.push("took today's medicines");
-    if (medicationTaken === true && missed === 1) bits.push("missed one dose");
-    if (medicationTaken === false) bits.push("missed " + missed + " doses");
-    if (sideEffects.length) bits.push("reported " + sideEffects.join(" and "));
-    if (symptoms.length) bits.push(symptoms.map(function (s) { return s.name + " (" + s.severity + ")"; }).join(", "));
-    if (appointmentOk === true) bits.push("will attend the appointment");
-    if (appointmentOk === false) bits.push("cannot attend the appointment");
-
-    var summary = bits.length
-      ? bits.join("; ").replace(/^./, function (c) { return c.toUpperCase(); }) + "."
-      : "No usable answers — the patient did not respond clearly.";
-
-    return {
-      medication_taken: medicationTaken,
-      missed_doses: missed,
-      side_effects: sideEffects,
-      symptoms: symptoms,
-      urgent_flags: urgent,
-      appointment_ok: appointmentOk,
-      needs_transport_help: appt.appt === "no" ? true : null,
-      summary: summary
-    };
+  /* ----------------------------------------------------------------- prompts */
+  function systemPrompt(topic) {
+    var p = state.patient;
+    return "You are a warm, unhurried health worker calling a patient at home for a daily medicine check-in. This is a real phone call, not a chat.\n\n" +
+      "PATIENT\n- Name: " + p.name + "\n- Age: " + p.age + "\n- Conditions: " + p.condition +
+      "\n- Medicines: " + p.meds.join("; ") + "\n- Next appointment: " + p.appt +
+      "\n- Language: " + p.langName + " (" + p.lang + ")\n\n" +
+      "RULES\n- Speak ONLY in " + p.langName + ". Do not switch to English.\n" +
+      "- One short sentence or two per turn. This is spoken aloud, so no lists, no markdown, no emojis, no stage directions.\n" +
+      "- Ask one question at a time and then stop and listen.\n" +
+      "- Never diagnose, never change a dose, never promise anything. If they report something alarming, say a health worker will call them back today.\n" +
+      "- Be patient and respectful. If they are confused, repeat once, more simply.\n\n" +
+      "NEXT_TOPIC: " + topic + "\nWHAT TO DO NOW: " + TOPIC_INSTRUCTION[topic];
   }
 
-  /* mirrors companion/escalation.py */
+  var EXTRACT_SYSTEM = "You extract a structured clinical-admin report from a phone check-in transcript. You are not diagnosing.\n\n" +
+    "Return ONLY a JSON object with exactly these keys:\n" +
+    "{\n  \"medication_taken\": true | false | null,\n  \"missed_doses\": integer (0 if none stated),\n  \"missed_dose_reason\": string (\"\" if not stated),\n" +
+    "  \"side_effects\": [string],\n  \"symptoms\": [{\"name\": string, \"severity\": \"mild\" | \"moderate\" | \"severe\"}],\n" +
+    "  \"urgent_flags\": [string],\n  \"appointment_ok\": true | false | null,\n  \"needs_transport_help\": true | false | null,\n" +
+    "  \"summary\": string (one English sentence for the coordinator),\n  \"patient_language_summary\": string (same sentence in the patient's language)\n}\n\n" +
+    "Rules:\n- Use null when the transcript does not answer the question. Never guess.\n" +
+    "- Put chest pain, breathlessness, fainting, bleeding, severe pain or confusion in urgent_flags, quoting the patient's words.\n" +
+    "- Do not invent symptoms that were not mentioned.";
+
+  function extractJson(text) {
+    if (!text) return null;
+    var cleaned = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+    try { var p = JSON.parse(cleaned); if (p && typeof p === "object" && !Array.isArray(p)) return p; } catch (e) {}
+    var s = cleaned.indexOf("{"), e2 = cleaned.lastIndexOf("}");
+    if (s === -1 || e2 <= s) return null;
+    try { var q = JSON.parse(cleaned.slice(s, e2 + 1)); return (q && typeof q === "object" && !Array.isArray(q)) ? q : null; } catch (err) { return null; }
+  }
+
+  /* --------------------------------------------------------------- escalation */
   function evaluate(report) {
     var reasons = [], level = "none";
     function bump(next, why) {
@@ -550,22 +558,23 @@
       var order = { none: 0, info: 1, soon: 2, urgent: 3 };
       if (order[next] > order[level]) level = next;
     }
-
-    (report.urgent_flags || []).forEach(function (f) {
-      bump("urgent", "Urgent symptom mentioned: " + f);
-    });
+    if (report.parse_error) {
+      bump("soon", "Check-in report could not be parsed — read the transcript");
+      return { level: level, reasons: reasons };
+    }
+    (report.urgent_flags || []).forEach(function (f) { bump("urgent", "Urgent symptom mentioned: " + f); });
     (report.symptoms || []).forEach(function (s) {
-      if (s.severity === "severe") bump("urgent", "Severe symptom: " + s.name);
-      else if (s.severity === "moderate") bump("soon", "Moderate symptom: " + s.name);
+      var sev = String((s && s.severity) || "").toLowerCase();
+      if (sev === "severe") bump("urgent", "Severe symptom: " + (s.name || "unspecified"));
+      else if (sev === "moderate") bump("soon", "Moderate symptom: " + (s.name || "unspecified"));
     });
-    if (report.missed_doses >= 2) bump("soon", report.missed_doses + " doses missed");
-    else if (report.missed_doses === 1) bump("info", "One dose missed");
-    if (report.medication_taken === false && report.missed_doses === 0) bump("soon", "Patient said medicines were not taken today");
+    var missed = Number(report.missed_doses) || 0;
+    if (missed >= 2) bump("soon", missed + " doses missed");
+    else if (missed === 1) bump("info", "One dose missed");
+    if (report.medication_taken === false && missed === 0) bump("soon", "Patient said medicines were not taken today");
     if (report.appointment_ok === false) bump("soon", "Patient cannot attend the appointment");
     if (report.needs_transport_help) bump("info", "Patient needs transport help");
-    if ((report.side_effects || []).length && level === "none") {
-      bump("info", "Side effects reported: " + report.side_effects.join(", "));
-    }
+    if ((report.side_effects || []).length && level === "none") bump("info", "Side effects reported: " + report.side_effects.join(", "));
     return { level: level, reasons: reasons };
   }
 
@@ -576,22 +585,26 @@
     none: "Nothing to report. Check-in stored."
   };
 
+  /* --------------------------------------------------------------- rendering */
   function renderReport(report) {
+    if (report.parse_error) {
+      el.reportBody.innerHTML = '<div class="empty">Extraction failed — read the transcript above. ' + esc(report.raw_extraction || "") + "</div>";
+      el.reportState.textContent = "parse error";
+      return;
+    }
     var rows = [
       ["medication_taken", report.medication_taken],
       ["missed_doses", report.missed_doses],
-      ["side_effects", report.side_effects.length ? report.side_effects.join(", ") : "none"],
-      ["symptoms", report.symptoms.length ? report.symptoms.map(function (s) { return s.name + " · " + s.severity; }).join("; ") : "none"],
-      ["urgent_flags", report.urgent_flags.length ? report.urgent_flags.join("; ") : "none"],
+      ["side_effects", (report.side_effects || []).length ? report.side_effects.join(", ") : "none"],
+      ["symptoms", (report.symptoms || []).length ? report.symptoms.map(function (s) { return (s.name || "?") + " · " + (s.severity || "?"); }).join("; ") : "none"],
+      ["urgent_flags", (report.urgent_flags || []).length ? report.urgent_flags.join("; ") : "none"],
       ["appointment_ok", report.appointment_ok],
       ["summary", report.summary]
     ];
     el.reportBody.innerHTML = rows.map(function (r) {
-      var val = r[1];
-      var isNull = val === null || val === undefined;
+      var isNull = r[1] === null || r[1] === undefined || r[1] === "";
       return '<div class="report__row"><span class="report__key">' + esc(r[0]) + "</span>" +
-        '<span class="report__val' + (isNull ? " report__val--null" : "") + '">' +
-        esc(isNull ? "null" : String(val)) + "</span></div>";
+        '<span class="report__val' + (isNull ? " report__val--null" : "") + '">' + esc(isNull ? "null" : String(r[1])) + "</span></div>";
     }).join("");
     el.reportState.textContent = "extracted";
   }
@@ -599,41 +612,32 @@
   function renderEscalation(e) {
     el.escBadge.className = "badge badge--" + (e.level === "none" ? "none" : e.level);
     el.escBadge.textContent = e.level;
-    var html = '<div class="esc__head"><span class="mono" style="font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Decision</span></div>';
-    if (!e.reasons.length) {
-      html += '<div class="empty">No rule fired.</div>';
-    } else {
-      html += '<ul class="esc__reasons">' + e.reasons.map(function (r) {
-        return "<li>" + esc(r) + "</li>";
-      }).join("") + "</ul>";
-    }
-    html += '<div class="esc__action"><strong>' + esc(LEVEL_TEXT[e.level]) + "</strong><br>Notify " +
-      esc(state.patient.coordinator) + "</div>";
+    var html = "";
+    if (!e.reasons.length) html += '<div class="empty">No rule fired.</div>';
+    else html += '<ul class="esc__reasons">' + e.reasons.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") + "</ul>";
+    html += '<div class="esc__action"><strong>' + esc(LEVEL_TEXT[e.level]) + "</strong><br>Notify " + esc(state.patient.coordinator) + "</div>";
     el.escBody.innerHTML = html;
   }
 
-  /* ------------------------------------------------------------------- flow */
+  /* -------------------------------------------------------------------- flow */
   function reset() {
-    state.step = 0; state.answers = {}; state.finished = false; state.clock = 0;
+    state.step = 0; state.history = []; state.finished = false; state.busy = false;
     state.report = null; state.escalation = null;
-    el.transcript.innerHTML = '<div class="empty" id="startHint">Press <strong>Start call</strong> to connect.</div>';
-    el.startHint = document.getElementById("startHint");
+    el.transcript.innerHTML = '<div class="empty" id="startHint">Press <strong>Start call</strong> to begin.</div>';
+    el.startHint = $("startHint");
     el.log.innerHTML = "";
-    el.reportBody.innerHTML = '<div class="empty">Fields fill in as the call progresses.</div>';
+    el.reportBody.innerHTML = '<div class="empty">Fields fill in when the call ends.</div>';
     el.reportState.textContent = "waiting";
-    el.escBadge.className = "badge badge--idle";
-    el.escBadge.textContent = "not evaluated";
-    el.escBody.innerHTML = '<div class="empty">Decided by rules, after the call ends.</div>';
-    hideOptions();
-    el.startBtn.disabled = false;
-    el.againBtn.disabled = true;
-    el.jsonBtn.disabled = true;
-    if ("speechSynthesis" in window) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+    el.escBadge.className = "badge badge--idle"; el.escBadge.textContent = "not evaluated";
+    el.escBody.innerHTML = '<div class="empty">Decided by rules, after the call.</div>';
+    el.composer.hidden = true; el.chips.innerHTML = "";
+    el.answerInput.value = "";
+    el.startBtn.disabled = false; el.againBtn.disabled = true; el.jsonBtn.disabled = true;
+    if (currentAudio) { try { currentAudio.pause(); } catch (e) {} }
   }
 
   function loadPatient(pid) {
-    state.pid = pid;
-    state.patient = PATIENTS[pid];
+    state.pid = pid; state.patient = PATIENTS[pid];
     var p = state.patient;
     el.avatar.textContent = p.initials;
     el.pName.textContent = p.name;
@@ -645,62 +649,193 @@
     reset();
   }
 
-  function start() {
-    reset();
-    el.startBtn.disabled = true;
-    logLine("call connected · " + state.patient.id + " · " + state.patient.lang, "k");
-    logLine("patient loaded from SQLite: " + state.patient.name);
-    state.step = 0;
-    askCurrent();
+  function setBusy(on) {
+    state.busy = on;
+    el.sendBtn.disabled = on;
+    el.answerInput.disabled = on;
+    el.startBtn.disabled = on || state.finished;
+    thinking(on);
   }
 
-  function askCurrent() {
+  async function agentTurn(topic) {
+    var t0 = performance.now();
+    if (!isLive()) {
+      var line = state.patient.demoLines[topic] || state.patient.demoLines.closing;
+      await new Promise(function (r) { setTimeout(r, 320); });
+      logLine("demo turn · " + topic + " (no key connected)");
+      return line;
+    }
+    var messages = [{ role: "system", content: systemPrompt(topic) }].concat(state.history);
+    if (!state.history.length) messages.push({ role: "user", content: "(The call has just connected. Say your first line now.)" });
+    var out = await chat(messages, { maxTokens: 220 });
+    logLine("LLM · " + CHAT_MODEL + " · " + topic + " · " + ms(t0));
+    return out.replace(/^(assistant|agent|bot)\s*:\s*/i, "").replace(/\s+/g, " ").trim();
+  }
+
+  async function askCurrent() {
     var topic = TOPICS[state.step];
-    if (!topic) { finish(); return; }
-    var line = state.patient.lines[topic];
-    addTurn("agent", line, "", topic);
-    logLine("LLM turn · sarvam-105b-conversations · topic=" + TOPIC_LABEL[topic]);
-    renderOptions(topic);
-  }
-
-  function answer(topic, opt) {
-    hideOptions();
-    addTurn("patient", opt.t, opt.g);
-    state.answers[topic] = opt;
-    logLine("STT · saaras:v4 · utterance → text");
-    state.step += 1;
-    if (state.step >= TOPICS.length) {
-      addTurn("agent", state.patient.lines.close, "", "close");
-      logLine("LLM turn · closing");
-      finish();
-    } else {
-      askCurrent();
+    if (!topic) { await finish(); return; }
+    setBusy(true);
+    try {
+      var line = await agentTurn(topic);
+      setBusy(false);
+      addTurn("agent", line);
+      state.history.push({ role: "assistant", content: line });
+      speakAloud(line);
+      renderChips(topic);
+      el.composer.hidden = false;
+      el.answerInput.focus();
+    } catch (err) {
+      setBusy(false);
+      toast(err.message);
+      logLine("turn failed · " + err.message, "bad");
     }
   }
 
-  function finish() {
-    state.finished = true;
-    el.replies.hidden = true;
-    state.report = buildReport();
-    logLine("extraction call · transcript → JSON", "ok");
-    renderReport(state.report);
-    state.escalation = evaluate(state.report);
-    renderEscalation(state.escalation);
-    logLine("escalation · " + state.escalation.level + " · " + state.escalation.reasons.length + " reason(s)", "k");
-    logLine("check-in stored · history updated", "ok");
-    el.againBtn.disabled = false;
-    el.jsonBtn.disabled = false;
+  async function send(text) {
+    if (state.busy || state.finished) return;
+    text = (text || "").trim();
+    if (!text) return;
+    el.answerInput.value = "";
+    addTurn("patient", text);
+    state.history.push({ role: "user", content: text });
+    state.step += 1;
+    el.chips.innerHTML = "";
+    if (state.step >= TOPICS.length) {
+      setBusy(true);
+      try {
+        var closing = await agentTurn(CLOSING);
+        setBusy(false);
+        addTurn("agent", closing);
+        state.history.push({ role: "assistant", content: closing });
+        speakAloud(closing);
+      } catch (err) {
+        setBusy(false); toast(err.message);
+      }
+      await finish();
+    } else {
+      await askCurrent();
+    }
   }
 
-  function download() {
+  async function finish() {
+    state.finished = true;
+    el.composer.hidden = true;
+    var report;
+    if (isLive()) {
+      var t0 = performance.now();
+      var transcriptText = state.history.map(function (m) {
+        return (m.role === "user" ? "PATIENT: " : "AGENT: ") + m.content;
+      }).join("\n");
+      try {
+        var raw = await chat([
+          { role: "system", content: EXTRACT_SYSTEM },
+          { role: "user", content: "TRANSCRIPT\n" + transcriptText + "\n\nReturn the JSON object now." }
+        ], { temperature: 0, maxTokens: 700 });
+        logLine("extraction · transcript → JSON · " + ms(t0), "ok");
+        report = extractJson(raw);
+        if (!report) report = { parse_error: true, raw_extraction: raw.slice(0, 400), summary: "Extraction failed." };
+      } catch (err) {
+        report = { parse_error: true, raw_extraction: err.message, summary: "Extraction failed." };
+        logLine("extraction failed · " + err.message, "bad");
+      }
+    } else {
+      report = demoReport();
+      logLine("demo report · keyword rules over your answers", "k");
+    }
+    state.report = report;
+    renderReport(report);
+    state.escalation = evaluate(report);
+    renderEscalation(state.escalation);
+    logLine("escalation · " + state.escalation.level + " · " + state.escalation.reasons.length + " reason(s)", "k");
+    el.againBtn.disabled = false;
+    el.jsonBtn.disabled = false;
+    el.startBtn.disabled = true;
+  }
+
+  /* demo-mode report: keyword rules, clearly labelled */
+  function demoReport() {
+    var said = state.history.filter(function (m) { return m.role === "user"; })
+      .map(function (m) { return m.content; }).join(" ");
+    var low = said.toLowerCase();
+    var negative = /(नहीं|भूल|இல்லை|மறந்த|ના|ભૂલી|no |not |didn't|forgot|missed)/.test(said + " " + low);
+    var urgent = [
+      ["chest pain", /सीने में|நெஞ்சில்|છાતીમાં|chest/],
+      ["breathlessness", /सांस|மூச்சு|શ્વાસ|breath/]
+    ].filter(function (u) { return u[1].test(said); }).map(function (u) { return u[0]; });
+    var digit = said.match(/\b([1-9])\b/);
+    var missed = digit ? Number(digit[1]) : (/(दो|இரண்டு|બે|two)/.test(said) ? 2 : (negative ? 1 : 0));
+    return {
+      engine: "demo-heuristic",
+      medication_taken: negative ? false : true,
+      missed_doses: missed,
+      side_effects: /(सिरदर्द|தலைவலி|માથું|headache|dizz|चक्कर|தலைச்சுற்றல்|ચક્કર)/.test(said) ? ["reported discomfort"] : [],
+      symptoms: urgent.map(function (u) { return { name: u, severity: "severe" }; }),
+      urgent_flags: urgent,
+      appointment_ok: /(नहीं|இல்லை|ના|no |can't)/.test(said) ? false : true,
+      needs_transport_help: null,
+      summary: "Demo-mode summary from keyword rules — connect a Sarvam key for a real extraction."
+    };
+  }
+
+  /* --------------------------------------------------------------------- mic */
+  async function toggleMic() {
+    if (!isLive()) { toast("Connect a Sarvam key to use the microphone — it needs Saaras for speech to text."); return; }
+    if (state.recording) { stopRecording(); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      toast("This browser can't record audio. Type the answer instead.");
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state.chunks = [];
+      var mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+      state.recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      state.recorder.ondataavailable = function (e) { if (e.data && e.data.size) state.chunks.push(e.data); };
+      state.recorder.onstop = async function () {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        state.recording = false;
+        el.micBtn.dataset.rec = "false";
+        el.micBtn.textContent = "Mic";
+        var blob = new Blob(state.chunks, { type: "audio/webm" });
+        if (blob.size < 1200) { logLine("recording too short · ignored", "bad"); return; }
+        setBusy(true);
+        try {
+          var t0 = performance.now();
+          var text = await transcribe(blob, state.patient.lang);
+          logLine("STT · " + STT_MODEL + " · " + ms(t0) + " · " + (text || "(silence)"));
+          setBusy(false);
+          if (!text) { toast("Couldn't hear anything in that clip. Try again, a bit closer to the mic."); return; }
+          el.answerInput.value = text;
+          send(text);
+        } catch (err) {
+          setBusy(false); toast(err.message); logLine("STT failed · " + err.message, "bad");
+        }
+      };
+      state.recorder.start();
+      state.recording = true;
+      el.micBtn.dataset.rec = "true";
+      el.micBtn.textContent = "Stop";
+      logLine("recording · speak as the patient");
+    } catch (err) {
+      toast("Microphone permission was refused, so type the answer instead.");
+    }
+  }
+  function stopRecording() {
+    if (state.recorder && state.recording) { try { state.recorder.stop(); } catch (e) {} }
+  }
+
+  /* ------------------------------------------------------------------ wiring */
+  el.startBtn.addEventListener("click", function () { state.finished = false; askCurrent(); });
+  el.againBtn.addEventListener("click", function () { reset(); state.finished = false; askCurrent(); });
+  el.sendBtn.addEventListener("click", function () { send(el.answerInput.value); });
+  el.answerInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); send(el.answerInput.value); } });
+  el.micBtn.addEventListener("click", toggleMic);
+  el.jsonBtn.addEventListener("click", function () {
     var payload = {
       patient: { id: state.patient.id, name: state.patient.name, language_code: state.patient.lang },
-      engine: "browser-demo (scripted dialogue, rule-based report)",
-      report: state.report,
-      escalation: state.escalation,
-      transcript: Array.prototype.map.call(el.transcript.querySelectorAll(".bubble"), function (b) {
-        return b.firstChild ? b.firstChild.textContent : "";
-      })
+      engine: state.engine, report: state.report, escalation: state.escalation,
+      transcript: state.history
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
@@ -708,24 +843,37 @@
     a.download = "checkin-" + state.patient.id + ".json";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
-  }
-
-  /* ------------------------------------------------------------------ wiring */
-  el.startBtn.addEventListener("click", start);
-  el.againBtn.addEventListener("click", start);
-  el.jsonBtn.addEventListener("click", download);
+  });
   el.speakToggle.addEventListener("click", function () {
     state.speak = !state.speak;
     el.speakToggle.setAttribute("aria-pressed", state.speak ? "true" : "false");
-    if (!state.speak && "speechSynthesis" in window) {
-      try { window.speechSynthesis.cancel(); } catch (e) {}
-    }
+    el.speakToggle.textContent = state.speak ? "Voice on" : "Voice off";
+    if (!state.speak && currentAudio) { try { currentAudio.pause(); } catch (e) {} }
+  });
+  el.keySave.addEventListener("click", function () {
+    var v = (el.keyInput.value || "").trim();
+    if (!v || v.indexOf("•") === 0) { toast("Paste your sk_... key first (dashboard.sarvam.ai → API Keys)."); return; }
+    if (v.indexOf("sk_") !== 0) { toast("That doesn't look like a Sarvam subscription key — it should start with sk_."); return; }
+    KEY = v;
+    try { window.localStorage.setItem(KEY_STORE, KEY); } catch (e) {}
+    setMode();
+    logLine("key connected · live mode", "ok");
+    toast("Key saved in this browser. Press Start call to run a real check-in.");
+    el.toast.dataset.show = "false";
+  });
+  el.keyClear.addEventListener("click", function () {
+    KEY = "";
+    try { window.localStorage.removeItem(KEY_STORE); } catch (e) {}
+    setMode();
+    logLine("key removed · back to demo mode");
   });
   Array.prototype.forEach.call(document.querySelectorAll(".pick[data-pid]"), function (b) {
     b.addEventListener("click", function () { loadPatient(b.dataset.pid); });
   });
 
+  setMode();
   loadPatient("P001");
+  logLine("ready · " + (isLive() ? "live mode, calls go straight to Sarvam" : "demo mode, add a key for real models"));
 })();
 </script>
 </body>
