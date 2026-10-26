@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Missing Dose — a daily medicine check-in call in the patient's language</title>
+<meta name="description" content="A voice agent that phones patients at home, asks about today's medicines, listens for symptoms and escalates to a human coordinator. Sarvam + Exotel, Python.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2efe7;
+    --bg-grid: rgba(28, 43, 58, 0.055);
+    --surface: #fbf9f4;
+    --surface-2: #f7f4ec;
+    --recessed: #eee9df;
+    --border: rgba(28, 43, 58, 0.14);
+    --border-strong: rgba(28, 43, 58, 0.28);
+    --text: #17232f;
+    --text-dim: #5c6b78;
+    --text-faint: #8a97a1;
+    --teal: #0d6e68;
+    --teal-dim: rgba(13, 110, 104, 0.10);
+    --rust: #a8490f;
+    --rust-dim: rgba(168, 73, 15, 0.10);
+    --green: #2f6f3e;
+    --green-dim: rgba(47, 111, 62, 0.12);
+    --amber: #8a5a06;
+    --amber-dim: rgba(138, 90, 6, 0.12);
+    --red: #9b2c2c;
+    --red-dim: rgba(155, 44, 44, 0.12);
+    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    --shadow: 0 1px 2px rgba(28,43,58,.05), 0 8px 24px -18px rgba(28,43,58,.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e161d;
+      --bg-grid: rgba(232, 238, 242, 0.045);
+      --surface: #16212b;
+      --surface-2: #1a2632;
+      --recessed: #101a23;
+      --border: rgba(232, 238, 242, 0.12);
+      --border-strong: rgba(232, 238, 242, 0.26);
+      --text: #e9eff3;
+      --text-dim: #9fb0bd;
+      --text-faint: #6f8290;
+      --teal: #57c9c0;
+      --teal-dim: rgba(87, 201, 192, 0.12);
+      --rust: #e39a63;
+      --rust-dim: rgba(227, 154, 99, 0.12);
+      --green: #79c98d;
+      --green-dim: rgba(121, 201, 141, 0.14);
+      --amber: #dfb05c;
+      --amber-dim: rgba(223, 176, 92, 0.14);
+      --red: #e58b8b;
+      --red-dim: rgba(229, 139, 139, 0.14);
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -20px rgba(0,0,0,.8);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
+      radial-gradient(1200px 520px at 50% -10%, var(--teal-dim), transparent 70%);
+    background-size: 32px 32px, 32px 32px, 100% 100%;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--teal); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: currentColor; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar__inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 12px 0; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  .brand__dot { width: 9px; height: 9px; background: var(--teal); border-radius: 50%; box-shadow: 0 0 0 3px var(--teal-dim); }
+  .topnav { display: flex; gap: 18px; font-family: var(--font-mono); font-size: 12.5px; }
+  .topnav a { color: var(--text-dim); }
+  .topnav a:hover { color: var(--teal); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 84px 0 56px; }
+  .kicker {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--rust); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ""; width: 28px; height: 1px; background: var(--rust); opacity: .7; }
+  h1 {
+    font-size: clamp(2.5rem, 6vw, 4.2rem);
+    line-height: 1.02; letter-spacing: -0.03em; font-weight: 600;
+    margin: 0 0 22px; max-width: 16ch;
+  }
+  h1 em { font-style: normal; color: var(--teal); }
+  .lede {
+    font-size: clamp(1.05rem, 2vw, 1.28rem); color: var(--text-dim);
+    max-width: 62ch; margin: 0 0 32px; font-weight: 300; line-height: 1.62;
+  }
+  .lede strong { color: var(--text); font-weight: 500; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 3px;
+    font-family: var(--font-mono); font-size: 13px; letter-spacing: .02em;
+    border: 1px solid var(--border-strong); color: var(--text);
+    background: var(--surface); transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: var(--teal); border-bottom-color: var(--teal); }
+  .btn--primary { background: var(--teal); color: var(--bg); border-color: var(--teal); font-weight: 500; }
+  .btn--primary:hover { background: var(--teal); color: var(--bg); opacity: .92; }
+  .btn__arrow { font-family: var(--font-body); }
+
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px; margin-top: 56px; border: 1px solid var(--border);
+    background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .stat { background: var(--surface); padding: 18px 20px; }
+  .stat__num { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em; }
+  .stat__label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; margin-top: 4px; }
+
+  /* ---------- sections ---------- */
+  section { padding: 64px 0; }
+  .section-head { margin-bottom: 34px; max-width: 70ch; }
+  .section-label {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px;
+  }
+  .section-label::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+  .section-label--rust::before { background: var(--rust); }
+  .section-label--green::before { background: var(--green); }
+  h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); line-height: 1.15; letter-spacing: -.02em; margin: 0 0 12px; font-weight: 600; }
+  .section-head p { color: var(--text-dim); margin: 0; font-weight: 300; }
+
+  /* ---------- cards ---------- */
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
+    padding: 22px; min-width: 0; box-shadow: var(--shadow);
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--text-dim); font-size: .93rem; font-weight: 300; overflow-wrap: break-word; }
+  .card__tag {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--teal); background: var(--teal-dim); padding: 3px 7px; border-radius: 2px;
+    display: inline-block; margin-bottom: 12px;
+  }
+
+  /* ---------- architecture stack ---------- */
+  .stack { display: grid; gap: 0; }
+  .layer {
+    display: grid; grid-template-columns: 92px 1fr; gap: 18px; align-items: stretch;
+    min-width: 0;
+  }
+  .layer__rail { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+  .layer__idx {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-faint);
+    border: 1px solid var(--border); border-radius: 50%;
+    width: 26px; height: 26px; display: grid; place-items: center; background: var(--surface);
+  }
+  .layer__line { flex: 1; width: 1px; background: var(--border-strong); margin: 6px 0; min-height: 22px; }
+  .layer__body {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
+    padding: 18px 20px; margin-bottom: 14px; min-width: 0; box-shadow: var(--shadow);
+  }
+  .layer__title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .layer__title h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+  .layer__file { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
+  .layer__body p { margin: 0; color: var(--text-dim); font-size: .92rem; font-weight: 300; }
+  .layer--accent .layer__body { border-left: 3px solid var(--teal); }
+  .layer--accent2 .layer__body { border-left: 3px solid var(--rust); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 2px; padding: 3px 8px; background: var(--surface-2);
+  }
+
+  /* ---------- topic flow ---------- */
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; counter-reset: step; }
+  .flow__item {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 3px; padding: 18px; min-width: 0;
+  }
+  .flow__item::before {
+    counter-increment: step; content: counter(step, decimal-leading-zero);
+    font-family: var(--font-mono); font-size: 11px; color: var(--rust);
+    letter-spacing: .1em; display: block; margin-bottom: 8px;
+  }
+  .flow__item h4 { margin: 0 0 6px; font-size: .95rem; font-weight: 600; }
+  .flow__item p { margin: 0; font-size: .88rem; color: var(--text-dim); font-weight: 300; }
+  .flow__item--last { border-color: var(--teal); background: var(--teal-dim); }
+  .flow__item--last::before { color: var(--teal); }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  thead th {
+    text-align: left; font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-dim); font-weight: 500;
+    padding: 12px 16px; border-bottom: 1px solid var(--border-strong);
+    background: var(--surface-2); position: sticky; top: 0;
+  }
+  tbody td { padding: 13px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+  tbody tr:hover { background: var(--teal-dim); }
+  td code { background: var(--recessed); padding: 1px 5px; border-radius: 2px; font-size: 12px; }
+  .col-tight { width: 1%; white-space: nowrap; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 2px; white-space: nowrap;
+  }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge--ok { color: var(--green); background: var(--green-dim); }
+  .badge--warn { color: var(--amber); background: var(--amber-dim); }
+  .badge--urgent { color: var(--red); background: var(--red-dim); }
+  .badge--info { color: var(--teal); background: var(--teal-dim); }
+
+  /* ---------- code ---------- */
+  .code {
+    border: 1px solid var(--border); border-radius: 3px; overflow: hidden; background: var(--recessed);
+  }
+  .code__head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-dim); background: var(--surface-2);
+  }
+  .code pre {
+    margin: 0; padding: 16px; overflow-x: auto;
+    font-family: var(--font-mono); font-size: 12.8px; line-height: 1.75; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .code .c { color: var(--text-faint); }
+  .code .k { color: var(--rust); }
+  .code .s { color: var(--teal); }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border: 1px solid var(--border); border-left: 3px solid var(--amber);
+    background: var(--amber-dim); border-radius: 3px; padding: 16px 18px; margin: 20px 0;
+  }
+  .callout__title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
+  .callout p { margin: 0; font-size: .93rem; color: var(--text); font-weight: 300; }
+  .callout--teal { border-left-color: var(--teal); background: var(--teal-dim); }
+  .callout--teal .callout__title { color: var(--teal); }
+
+  /* ---------- limits list ---------- */
+  .limits { display: grid; gap: 10px; counter-reset: lim; }
+  .limit {
+    display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 3px;
+    background: var(--surface); min-width: 0;
+  }
+  .limit::before {
+    counter-increment: lim; content: counter(lim);
+    font-family: var(--font-mono); font-size: 11px; color: var(--rust);
+    border: 1px solid var(--border); border-radius: 2px; width: 22px; height: 22px;
+    display: grid; place-items: center;
+  }
+  .limit p { margin: 0; font-size: .92rem; color: var(--text-dim); font-weight: 300; overflow-wrap: break-word; }
+  .limit strong { color: var(--text); font-weight: 500; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--border); padding: 40px 0 64px; margin-top: 24px; }
+  .footer__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px; }
+  .footer h4 { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 10px; font-weight: 500; }
+  .footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .footer li { font-size: .9rem; }
+  .footer a { color: var(--text-dim); }
+  .footer a:hover { color: var(--teal); }
+  .footer__note { margin-top: 32px; font-size: .82rem; color: var(--text-faint); font-family: var(--font-mono); }
+
+  /* ---------- motion ---------- */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .anim { animation: fadeUp .5s ease both; }
+  @media (prefers-reduced-motion: reduce) {
+    .anim { animation: none; }
+    html { scroll-behavior: auto; }
+    .btn:hover { transform: none; }
+  }
+
+  @media (max-width: 640px) {
+    .layer { grid-template-columns: 44px 1fr; gap: 12px; }
+    .topnav { display: none; }
+    .hero { padding: 56px 0 40px; }
+    section { padding: 48px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar__inner">
+    <div class="brand"><span class="brand__dot"></span> Missing&nbsp;Dose</div>
+    <nav class="topnav">
+      <a href="#pipeline">Pipeline</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#escalation">Escalation</a>
+      <a href="#status">Status</a>
+      <a href="#run">Run it</a>
+    </nav>
+  </div>
+</div>
+
+<header class="wrap hero">
+  <div class="kicker anim">Voice check-in agent · Sarvam + Exotel</div>
+  <h1 class="anim" style="animation-delay:.05s">A daily call that asks <em>one question</em> that matters.</h1>
+  <p class="lede anim" style="animation-delay:.1s">
+    Patients stop taking medicines quietly — nobody notices for weeks. Missing Dose phones
+    them at home, asks in <strong>their own language</strong> whether today's doses were taken,
+    listens for symptoms, reminds them about the next appointment, and hands anything
+    worrying to a human coordinator the same morning.
+  </p>
+  <div class="cta-row anim" style="animation-delay:.15s">
+    <a class="btn btn--primary" href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose">View the code <span class="btn__arrow">→</span></a>
+    <a class="btn" href="#run">Run the offline demo</a>
+    <a class="btn" href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose#readme">Read the README</a>
+  </div>
+
+  <div class="stat-strip anim" style="animation-delay:.2s">
+    <div class="stat"><div class="stat__num">4</div><div class="stat__label">check-in topics</div></div>
+    <div class="stat"><div class="stat__num">46</div><div class="stat__label">offline tests</div></div>
+    <div class="stat"><div class="stat__num">11</div><div class="stat__label">languages supported</div></div>
+    <div class="stat"><div class="stat__num">1</div><div class="stat__label">API key needed</div></div>
+  </div>
+</header>
+
+<section class="wrap" id="pipeline">
+  <div class="section-head">
+    <div class="section-label">The call</div>
+    <h2>Four topics, then a clean goodbye</h2>
+    <p>
+      The dialogue is not open-ended chatter. A state machine walks the same four topics every
+      time, so a check-in can be compared across days, and the extraction step can ask for
+      exactly the fields it needs.
+    </p>
+  </div>
+  <div class="flow">
+    <div class="flow__item">
+      <h4>Medication adherence</h4>
+      <p>Did today's doses go in? If not, how many were missed and why.</p>
+    </div>
+    <div class="flow__item">
+      <h4>Side effects</h4>
+      <p>Any discomfort after taking them — one short answer, then move on.</p>
+    </div>
+    <div class="flow__item">
+      <h4>Symptoms</h4>
+      <p>Pain, dizziness, breathlessness, swelling. One clarifying question if it sounds serious.</p>
+    </div>
+    <div class="flow__item">
+      <h4>Appointment</h4>
+      <p>The next visit date, and whether they can actually get there.</p>
+    </div>
+    <div class="flow__item flow__item--last">
+      <h4>Structured report</h4>
+      <p>A second, separate model call turns the transcript into strict JSON — with <code>null</code> where the patient never answered.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--teal">
+    <div class="callout__title">Why extraction is a separate call</div>
+    <p>
+      A chatty model will happily skip a missed dose while being warm about it. Keeping the
+      extraction prompt separate, with its own instructions and temperature zero, means the
+      report can be validated on its own terms — and when it fails, it says
+      <code>parse_error</code> instead of inventing a number.
+    </p>
+  </div>
+</section>
+
+<section class="wrap" id="architecture">
+  <div class="section-head">
+    <div class="section-label section-label--rust">Architecture</div>
+    <h2>What sits between the phone line and the models</h2>
+    <p>
+      Exotel carries the call and streams raw audio over a WebSocket. The bridge in the middle
+      owns turn-taking: it buffers until it hears silence, transcribes, runs one dialogue turn,
+      speaks the reply back, and clears the speaker the moment the patient interrupts.
+    </p>
+  </div>
+
+  <div class="stack">
+    <div class="layer">
+      <div class="layer__rail"><div class="layer__idx">01</div><div class="layer__line"></div></div>
+      <div class="layer__body">
+        <div class="layer__title"><h3>Patient's phone</h3><span class="layer__file">PSTN</span></div>
+        <p>An ordinary phone call. No app, no smartphone, no data connection — which is the whole point for this audience.</p>
+      </div>
+    </div>
+
+    <div class="layer layer--accent2">
+      <div class="layer__rail"><div class="layer__idx">02</div><div class="layer__line"></div></div>
+      <div class="layer__body">
+        <div class="layer__title"><h3>Exotel AgentStream</h3><span class="layer__file">telephony/exotel.py</span></div>
+        <p>Places the outbound call and opens a bidirectional stream: base64 PCM16, mono, 8 kHz, in chunks of 3.2–100 KB.</p>
+        <div class="chips">
+          <span class="chip">connected</span><span class="chip">start</span><span class="chip">media</span>
+          <span class="chip">mark</span><span class="chip">clear</span><span class="chip">stop</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer layer--accent">
+      <div class="layer__rail"><div class="layer__idx">03</div><div class="layer__line"></div></div>
+      <div class="layer__body">
+        <div class="layer__title"><h3>Audio bridge</h3><span class="layer__file">telephony/bridge.py</span></div>
+        <p>Framework-free state machine: RMS turn detection over 20 ms frames, barge-in via <code>clear</code>, 30-second utterance cap, and idempotent finalisation.</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer__rail"><div class="layer__idx">04</div><div class="layer__line"></div></div>
+      <div class="layer__body">
+        <div class="layer__title"><h3>Sarvam models</h3><span class="layer__file">sarvam_client.py</span></div>
+        <p>Three endpoints, one subscription key. Speech in, dialogue, speech out.</p>
+        <div class="chips">
+          <span class="chip">saaras:v4 → text</span>
+          <span class="chip">sarvam-105b-conversations → reply</span>
+          <span class="chip">bulbul:v3 → audio</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer__rail"><div class="layer__idx">05</div><div class="layer__line"></div></div>
+      <div class="layer__body">
+        <div class="layer__title"><h3>Report &amp; escalation</h3><span class="layer__file">escalation.py · notifier.py</span></div>
+        <p>Rule-based triage into urgent / soon / info, then delivery to console, JSONL, webhook or email — recording which channels actually went out.</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer__rail"><div class="layer__idx">06</div></div>
+      <div class="layer__body">
+        <div class="layer__title"><h3>Storage &amp; scheduler</h3><span class="layer__file">patient_db.py · scheduler.py</span></div>
+        <p>SQLite keeps patients, check-ins, transcripts and escalations, so adherence history survives a restart. The scheduler wakes daily, skips anyone already called, and retries a failed attempt after three hours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="escalation">
+  <div class="section-head">
+    <div class="section-label section-label--green">Triage</div>
+    <h2>Escalation is a rule set, not a vibe</h2>
+    <p>
+      A coordinator has to be able to argue with the logic that woke them up, so the thresholds
+      are plain rules in one file — and levels never downgrade once raised.
+    </p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-tight">Level</th>
+          <th>What triggers it</th>
+          <th>What happens</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge--urgent">Urgent</span></td>
+          <td>Chest pain, breathlessness, fainting or bleeding — matched in any supported language — or any symptom the model graded <code>severe</code>.</td>
+          <td>Coordinator alert with the patient's own words quoted. A human calls back the same day.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--warn">Soon</span></td>
+          <td>Two or more missed doses, "didn't take them today", a declined appointment, an unparseable report, or three days with no completed check-in.</td>
+          <td>Follow-up within a day, by webhook or email.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--info">Info</span></td>
+          <td>One missed dose, side effects mentioned, transport help needed.</td>
+          <td>Logged for the next review. Nobody is paged.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--ok">None</span></td>
+          <td>Everything answered, nothing flagged.</td>
+          <td>Check-in stored. No notification.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap" id="status">
+  <div class="section-head">
+    <div class="section-label section-label--rust">Honest status</div>
+    <h2>What is proven, and what is only written</h2>
+    <p>
+      The distinction matters more than a feature list. Everything marked working is covered by
+      the test suite that runs on every push.
+    </p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th class="col-tight">State</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dialogue engine</td>
+          <td><span class="badge badge--ok">Working</span></td>
+          <td>Four topics plus closing, language-locked per patient.</td>
+        </tr>
+        <tr>
+          <td>Report extraction</td>
+          <td><span class="badge badge--ok">Working</span></td>
+          <td>Strict JSON, tolerant parser, explicit failure instead of invented data.</td>
+        </tr>
+        <tr>
+          <td>Escalation rules</td>
+          <td><span class="badge badge--ok">Working</span></td>
+          <td>Keyword, severity, adherence and missed-check-in rules tested individually.</td>
+        </tr>
+        <tr>
+          <td>Storage &amp; scheduler</td>
+          <td><span class="badge badge--ok">Working</span></td>
+          <td>SQLite history, daily cadence, retry window, dry-run mode.</td>
+        </tr>
+        <tr>
+          <td>Live WebSocket bridge</td>
+          <td><span class="badge badge--ok">Tested</span></td>
+          <td>Protocol level: events, chunk sizes, barge-in, idempotent finalise.</td>
+        </tr>
+        <tr>
+          <td>Real Exotel call</td>
+          <td><span class="badge badge--warn">Unverified</span></td>
+          <td>Follows the published API shape; no live call was placed while building it.</td>
+        </tr>
+        <tr>
+          <td>Sub-second latency</td>
+          <td><span class="badge badge--info">Roadmap</span></td>
+          <td>Turn-based today (~2–4 s). Streaming STT/TTS is the upgrade path.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap" id="run">
+  <div class="section-head">
+    <div class="section-label">Try it</div>
+    <h2>Runs without a key in about thirty seconds</h2>
+    <p>
+      The offline engine produces scripted agent lines and a keyword report, clearly labelled
+      <code>offline-heuristic</code>, so a demo never looks like a model result.
+    </p>
+  </div>
+
+  <div class="code">
+    <div class="code__head"><span>terminal</span><span>no api key required</span></div>
+    <pre><span class="c"># clone</span>
+<span class="k">git</span> clone https://github.com/arhamdaga4-cmd/sarvam-missing-dose.git
+<span class="k">cd</span> sarvam-missing-dose
+
+<span class="c"># install and run a full check-in for the Tamil demo patient</span>
+<span class="k">pip</span> install -r requirements.txt
+<span class="k">python</span> run_checkup.py P002
+
+<span class="c"># with a real Sarvam key in .env</span>
+<span class="k">cp</span> .env.example .env
+<span class="k">python</span> run_checkup.py P001 --audio
+
+<span class="c"># the test suite</span>
+<span class="k">python</span> -m pytest -q</pre>
+  </div>
+
+  <div class="callout">
+    <div class="callout__title">Before you point it at a patient</div>
+    <p>
+      Make one test call on your own number, keep the API behind a private network, and treat the
+      SQLite file as medical data — it holds transcripts in plain text. Consent and an opt-out path
+      are not built yet.
+    </p>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="section-head">
+    <div class="section-label section-label--rust">Known limits</div>
+    <h2>What this does not do yet</h2>
+    <p>Written down here so nobody discovers them on a live call.</p>
+  </div>
+  <div class="limits">
+    <div class="limit"><p><strong>Turn-based, not streaming.</strong> Each utterance costs one transcription, one dialogue turn and one synthesis request — roughly two to four seconds of silence between the patient finishing and the agent replying.</p></div>
+    <div class="limit"><p><strong>The voice activity detector is an RMS gate.</strong> It will cut people off in a noisy room or on speakerphone. Tune the threshold, or swap in a real VAD.</p></div>
+    <div class="limit"><p><strong>No authentication on the HTTP API.</strong> Patient names and transcripts are readable by anyone who can reach the port.</p></div>
+    <div class="limit"><p><strong>One language per patient,</strong> fixed when the call starts. Code-mixed speech is transcribed fine, but the dialogue stays in a single language.</p></div>
+    <div class="limit"><p><strong>No consent capture and no opt-out.</strong> A real deployment needs both, plus a retention policy for the transcripts.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer__grid">
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose">Repository</a></li>
+          <li><a href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose#readme">README</a></li>
+          <li><a href="https://github.com/arhamdaga4-cmd/sarvam-missing-dose/tree/main/tests">Test suite</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Sarvam docs</h4>
+        <ul>
+          <li><a href="https://docs.sarvam.ai/api/api-guides-tutorials/chat-completion/overview">Chat completion</a></li>
+          <li><a href="https://docs.sarvam.ai/api/getting-started/models/saaras">Saaras (speech to text)</a></li>
+          <li><a href="https://docs.sarvam.ai/api/getting-started/models/bulbul">Bulbul (text to speech)</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Telephony docs</h4>
+        <ul>
+          <li><a href="https://developer.exotel.com/docs/agentstream/websocket-protocol">AgentStream protocol</a></li>
+          <li><a href="https://developer.exotel.com/docs/voice-v1/api-reference/connect-two-numbers">Connect two numbers</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Stack</h4>
+        <ul>
+          <li>Python 3.12 · FastAPI · SQLite</li>
+          <li>Saaras v4 · Bulbul v3 · Sarvam-105B</li>
+          <li>Exotel AgentStream</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__note">
+      Demo patients are fictional. Not affiliated with Sarvam AI or Exotel.
+      Built as a working reference, not a medical device.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
