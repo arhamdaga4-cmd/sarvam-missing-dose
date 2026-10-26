@@ -1,0 +1,12 @@
+# Core
+requests>=2.31
+numpy>=1.26
+python-dotenv>=1.0
+
+# Server (live phone bridge)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+
+# Tests
+pytest>=8.0
+httpx>=0.27

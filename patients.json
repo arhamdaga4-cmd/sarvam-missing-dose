@@ -1,0 +1,62 @@
+{
+  "patients": [
+    {
+      "id": "P001",
+      "name": "Ramesh Kumar",
+      "language_code": "hi-IN",
+      "phone": "+919000000001",
+      "age": 67,
+      "condition": "Type 2 diabetes, hypertension",
+      "medications": [
+        "Metformin 500mg (morning, night)",
+        "Amlodipine 5mg (morning)"
+      ],
+      "appointment": "12 November 2026, 11:00 AM",
+      "voice": "anushka",
+      "coordinator": {
+        "name": "Nurse Asha",
+        "phone": "+919000000101",
+        "email": "asha@example-clinic.org"
+      }
+    },
+    {
+      "id": "P002",
+      "name": "Lakshmi Iyer",
+      "language_code": "ta-IN",
+      "phone": "+919000000002",
+      "age": 72,
+      "condition": "Post-angioplasty, on dual antiplatelet therapy",
+      "medications": [
+        "Aspirin 75mg (morning)",
+        "Clopidogrel 75mg (morning)",
+        "Atorvastatin 20mg (night)"
+      ],
+      "appointment": "14 November 2026, 4:30 PM",
+      "voice": "anushka",
+      "coordinator": {
+        "name": "Nurse Priya",
+        "phone": "+919000000102",
+        "email": "priya@example-clinic.org"
+      }
+    },
+    {
+      "id": "P003",
+      "name": "Suresh Patel",
+      "language_code": "gu-IN",
+      "phone": "+919000000003",
+      "age": 59,
+      "condition": "Ischaemic heart disease",
+      "medications": [
+        "Aspirin 75mg (morning)",
+        "Metoprolol 25mg (morning, night)"
+      ],
+      "appointment": "18 November 2026, 9:00 AM",
+      "voice": "anushka",
+      "coordinator": {
+        "name": "Nurse Meera",
+        "phone": "+919000000103",
+        "email": "meera@example-clinic.org"
+      }
+    }
+  ]
+}
