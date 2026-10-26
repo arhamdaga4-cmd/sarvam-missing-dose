@@ -1,0 +1,27 @@
+# Secrets and local state
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-wal
+*.db-shm
+*.jsonl
+*.wav
+*.mp3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
